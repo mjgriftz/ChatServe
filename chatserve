@@ -1,0 +1,63 @@
+#! /usr/bin/env python
+#	chatserve
+#	CS372 Project 1
+#	Created by Marcus Griffiths
+#
+#	Description: A chat server that listens for a client connection. Once 
+#	the connection is established, it allows the server to exchange text
+#	information with the connected client.
+
+#initialization
+import sys
+from socket import *
+serverHandle = "enigma"
+serverPort = int(sys.argv[1])
+BUFF = 1024
+
+
+# returns a reference to a socket and binds the socket to the specified port
+def createSocket(port):
+	sock = socket(AF_INET, SOCK_STREAM)
+	sock.bind(('', port))
+	return sock
+
+# sets a socket to a listening state, and waits for client to connect
+# returns the client's handle and a reference to a new connection
+def getClient(sock, nConnects):
+	print("Waiting for client...")
+	sock.listen(nConnects)
+	clientSocket, clientAddress = sock.accept()
+	handle = clientSocket.recv(BUFF)
+	print(handle + " has connected")
+	return handle, clientSocket
+
+# sends the server handle to the client through the connection
+def sendServerHandle(sock, handle):
+	sock.send(handle)
+	
+# maintains a send/recv loop that exchanges text with the connected client
+def openChatLoop(sock, cHandle, sHandle):
+	nextLine = ""
+	while 1:
+		nextLine = sock.recv(BUFF)
+		if nextLine == "/quit":
+			break
+		print(cHandle + "> " + nextLine)
+		toSend = raw_input(sHandle + "> ")
+		sock.send(toSend)
+		if toSend == "/quit":
+			break
+#
+def closeConnection(sock):
+	sock.close()
+	print("Connection closed...")
+
+#Execute chat server. Quit on /quit command from client or server
+servSock = createSocket(serverPort)
+while 1:
+	clientHandle, clientSocket = getClient(servSock, 5)
+	sendServerHandle(clientSocket, serverHandle)
+	openChatLoop(clientSocket, clientHandle, serverHandle)
+	closeConnection(clientSocket)
+closeConnection(servSock)
+		
